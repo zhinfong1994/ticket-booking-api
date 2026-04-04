@@ -1,0 +1,4 @@
+export enum EVENT_STATUS {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
