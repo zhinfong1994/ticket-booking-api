@@ -15,7 +15,6 @@ import {
   CancelOrderResponseDto,
 } from './dtos/cancel-order.dto';
 import { GetOrdersResponseDto } from './dtos/get-order.dto';
-// import { Cron } from '@nestjs/schedule';
 import { ORDER_STATUS } from './enums/order.enum';
 import { TicketService } from '../ticket/ticket.service';
 
@@ -110,25 +109,4 @@ export class OrderService {
       client.release();
     }
   }
-
-  // @Cron('* * * * *') // every minute
-  // async releaseExpiredOrders() {
-  //   const client: PoolClient = await pool.connect();
-  //   await client.query(`
-  //       UPDATE orders
-  //       SET status = 'CANCELLED'
-  //       WHERE status = 'PENDING'
-  //       AND expires_at < NOW()
-  //       RETURNING id
-  //   `);
-
-  //   await client.query(`
-  //       UPDATE tickets
-  //       SET status = 'AVAILABLE',
-  //           order_id = NULL
-  //       WHERE order_id IN (
-  //       SELECT id FROM orders WHERE status = 'CANCELLED'
-  //       )
-  //   `);
-  // }
 }
