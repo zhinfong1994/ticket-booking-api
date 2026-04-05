@@ -2,19 +2,9 @@ openapi: 3.0.3
 info:
   title: Ticket Booking System API
   version: 1.0.0
-  description: |
-    Ticket Booking System with JWT authentication, concurrency-safe reservations,
-    and automatic order expiration (15 minutes).
-
-    Business Rules:
-    - Password is stored as hashed value (never returned in API)
-    - Prevent duplicate events (same venue + datetime)
-    - Prevent double booking using atomic reservation
-    - Orders expire after 15 minutes if still PENDING
-    - Expired orders are CANCELLED and tickets are released to AVAILABLE
 
 servers:
-  - url: http://localhost:3000/api
+  - url: http://localhost:3000
 
 tags:
   - name: Auth
@@ -24,12 +14,10 @@ tags:
   - name: Orders
 
 paths:
-
   /auth/register:
     post:
       tags: [Auth]
-      summary: Register user (email + password)
-      description: Password will be hashed before storing in database
+      summary: Register user
       requestBody:
         required: true
         content:
@@ -38,17 +26,16 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: User registered successfully
+          description: Registered
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/RegisterResponse'
 
   /auth/login:
     post:
       tags: [Auth]
-      summary: Login and return JWT token
-      description: Validate email and hashed password
+      summary: Login and get JWT
       requestBody:
         required: true
         content:
@@ -57,7 +44,7 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Login successful
+          description: JWT token
           content:
             application/json:
               schema:
@@ -75,7 +62,7 @@ paths:
               $ref: '#/components/schemas/CreateVenueRequest'
       responses:
         '201':
-          description: Venue created
+          description: Created
           content:
             application/json:
               schema:
@@ -83,10 +70,10 @@ paths:
 
     get:
       tags: [Venues]
-      summary: Get all venues
+      summary: List venues
       responses:
         '200':
-          description: List of venues
+          description: OK
           content:
             application/json:
               schema:
@@ -97,8 +84,7 @@ paths:
   /events:
     post:
       tags: [Events]
-      summary: Create event
-      description: Prevent duplicate event (same venue + datetime)
+      summary: Create event (unique venue + datetime)
       requestBody:
         required: true
         content:
@@ -107,18 +93,16 @@ paths:
               $ref: '#/components/schemas/CreateEventRequest'
       responses:
         '201':
-          description: Event created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Event'
+          description: Created
+        '409':
+          description: Duplicate event
 
     get:
       tags: [Events]
-      summary: Get all events
+      summary: List events
       responses:
         '200':
-          description: List of events
+          description: OK
           content:
             application/json:
               schema:
@@ -129,15 +113,16 @@ paths:
   /tickets:
     get:
       tags: [Tickets]
-      summary: Get tickets
+      summary: Get tickets by event
       parameters:
         - name: eventId
           in: query
+          required: true
           schema:
             type: string
       responses:
         '200':
-          description: List of tickets
+          description: Tickets
           content:
             application/json:
               schema:
@@ -148,12 +133,7 @@ paths:
   /orders:
     post:
       tags: [Orders]
-      summary: Create order (reserve tickets)
-      description: |
-        - Requires JWT authentication
-        - Prevent race condition using atomic update (e.g. SELECT FOR UPDATE)
-        - Tickets move from AVAILABLE → RESERVED
-        - Order expires in 15 minutes if not confirmed
+      summary: Create order (prevent race condition)
       security:
         - bearerAuth: []
       requestBody:
@@ -164,20 +144,18 @@ paths:
               $ref: '#/components/schemas/CreateOrderRequest'
       responses:
         '201':
-          description: Order created (PENDING)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
+          description: Reserved
+        '409':
+          description: Ticket conflict
 
     get:
       tags: [Orders]
-      summary: Get user orders
+      summary: Get orders
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: List of orders
+          description: OK
           content:
             application/json:
               schema:
@@ -188,11 +166,6 @@ paths:
   /orders/{id}/confirm:
     patch:
       tags: [Orders]
-      summary: Confirm order
-      description: |
-        - Requires JWT
-        - Change order status to CONFIRMED
-        - Tickets RESERVED → SOLD
       security:
         - bearerAuth: []
       parameters:
@@ -203,20 +176,11 @@ paths:
             type: string
       responses:
         '200':
-          description: Order confirmed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
+          description: Confirmed
 
   /orders/{id}/cancel:
     patch:
       tags: [Orders]
-      summary: Cancel order
-      description: |
-        - Requires JWT
-        - Change order status to CANCELLED
-        - Tickets RESERVED → AVAILABLE
       security:
         - bearerAuth: []
       parameters:
@@ -227,14 +191,9 @@ paths:
             type: string
       responses:
         '200':
-          description: Order cancelled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
+          description: Cancelled
 
 components:
-
   securitySchemes:
     bearerAuth:
       type: http
@@ -242,23 +201,6 @@ components:
       bearerFormat: JWT
 
   schemas:
-
-    User:
-      type: object
-      description: User response (password never exposed)
-      properties:
-        id:
-          type: string
-        email:
-          type: string
-          format: email
-        status:
-          type: string
-          enum: [ACTIVE, INACTIVE]
-        createdAt:
-          type: string
-          format: date-time
-
     RegisterRequest:
       type: object
       required: [email, password]
@@ -268,8 +210,12 @@ components:
           format: email
         password:
           type: string
-          writeOnly: true
-          minLength: 6
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
 
     LoginRequest:
       type: object
@@ -277,18 +223,24 @@ components:
       properties:
         email:
           type: string
-          format: email
         password:
           type: string
-          writeOnly: true
 
     LoginResponse:
       type: object
       properties:
         accessToken:
           type: string
-        user:
-          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        passwordHash:
+          type: string
 
     Venue:
       type: object
@@ -299,9 +251,6 @@ components:
           type: string
         location:
           type: string
-        createdAt:
-          type: string
-          format: date-time
 
     CreateVenueRequest:
       type: object
@@ -327,9 +276,6 @@ components:
         status:
           type: string
           enum: [ACTIVE, INACTIVE]
-        createdAt:
-          type: string
-          format: date-time
 
     CreateEventRequest:
       type: object
@@ -371,9 +317,6 @@ components:
           type: string
           enum: [PENDING, CONFIRMED, CANCELLED]
         expiresAt:
-          type: string
-          format: date-time
-        createdAt:
           type: string
           format: date-time
 

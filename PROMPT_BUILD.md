@@ -12,7 +12,6 @@ Requirements:
 * Ticket status: AVAILABLE, RESERVED, SOLD
 * Event status: ACTIVE, INACTIVE
 * Order status: PENDING, CONFIRMED, CANCELLED
-* Order expires in 15 minutes and will auto release ticket as well as order CANCELLED if order still PENDING
 * Prevent double or race condition ticket booking
 * Prevent duplicate event (same venue + datetime)
 * Simple registration (emaiil + password) as well as store email and hasded password in user db
