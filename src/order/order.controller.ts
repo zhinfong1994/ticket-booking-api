@@ -25,7 +25,7 @@ export class OrderController {
   @Post()
   create(
     @Body() body: CreateOrderBodyDto,
-    @Req() req: any,
+    @Req() req: { user?: { userId?: string } },
   ): Promise<CreateOrderResponseDto> {
     return this.service.createOrder({
       userId: req?.user?.userId,
