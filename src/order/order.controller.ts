@@ -23,7 +23,7 @@ export class OrderController {
   @Post()
   create(
     @Body() body: CreateOrderBodyDto,
-    @Req() req: any,
+    @Req() req: { user?: { userId?: string } },
   ): Promise<CreateOrderResponseDto> {
     return this.service.createOrder({
       userId: req?.user?.userId,
@@ -45,7 +45,7 @@ export class OrderController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  findOrderByUser(@Req() req: any) {
-    return this.service.findOrderByUser(req.user.userId as string);
+  findOrderByUser(@Req() req: { user?: { userId?: string } }) {
+    return this.service.findOrderByUser(req.user?.userId);
   }
 }
