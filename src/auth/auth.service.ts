@@ -11,9 +11,6 @@ interface Users {
   status: USER_STATUS;
 }
 
-const JWT_SECRET =
-  '9f7c2a6d8b3e4f1a5c7d9e2b6a8f4c1d7e9b2a6c3f8d1e4b5a7c9d2e6f1b3a8';
-
 @Injectable()
 export class AuthService {
   public async register(email: string, password: string): Promise<boolean> {
@@ -38,6 +35,8 @@ export class AuthService {
   }
 
   public async login(email: string, password: string) {
+    const JWT_SECRET = process.env.JWT_SECRET;
+
     const result = await pool.query(
       `SELECT * FROM users WHERE email = $1 AND status = $2`,
       [email, USER_STATUS.ACTIVE],

@@ -6,13 +6,16 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/ticket_db_main
+      DATABASE_URL: process.env.DATABASE_URL
+      JWT_SECRET: process.env.JWT_SECRET
     depends_on:
       - db
 
   db:
-    image: postgres:15
+    image: postgres:17
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ticket_db_main
+      POSTGRES_USER: process.env.POSTGRES_USER
+      POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD
+      POSTGRES_DB: process.env.POSTGRES_DB
+    ports:
+      - "5432:5432"
