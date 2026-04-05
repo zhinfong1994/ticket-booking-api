@@ -10,8 +10,8 @@ import { EVENT_STATUS } from './enums/event.enum';
 interface Events {
   id: string;
   name: string;
-  venue_id: string;
-  date_time: Date;
+  venueId: string;
+  dateTime: Date;
   status: EVENT_STATUS;
 }
 
@@ -20,9 +20,9 @@ export class EventService {
   async create(body: CreateEventDto): Promise<CreateEventResponseDto> {
     const { name, venueId, dateTime } = body;
     const result = await pool.query(
-      `INSERT INTO events (name, venue_id, date_time)
+      `INSERT INTO events (name, venueId, dateTime)
          VALUES ($1, $2, $3)
-         ON CONFLICT (venue_id, date_time) DO NOTHING
+         ON CONFLICT (venueId, dateTime) DO NOTHING
         `,
       [name, venueId, dateTime],
     );

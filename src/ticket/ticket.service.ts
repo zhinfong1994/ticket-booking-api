@@ -21,7 +21,7 @@ import { TICKET_STATUS } from './enums/ticket.enum';
 export class TicketService {
   async findByEvent(eventId: string): Promise<GetTicketByEventResponseDto[]> {
     const result: QueryResult<GetTicketByEventResponseDto> = await pool.query(
-      `SELECT id, event_id, status, seat_no FROM tickets WHERE event_id = $1`,
+      `SELECT id, eventId, status, seatNo FROM tickets WHERE eventId = $1 ORDER BY createdAt ASC`,
       [eventId],
     );
     return result.rows;
@@ -31,7 +31,7 @@ export class TicketService {
     const { eventId, totalSeats, seatsPerRow } = body;
 
     const getEventTicketsCount = await pool.query(
-      `SELECT COUNT(*) FROM tickets WHERE event_id = $1`,
+      `SELECT COUNT(*) FROM tickets WHERE eventId = $1`,
       [eventId],
     );
 
@@ -43,17 +43,19 @@ export class TicketService {
       throw new Error('All tickets already generated');
     }
 
+    const totalRows: number = totalSeats / seatsPerRow;
+
     const result = await pool.query(
       `
-        INSERT INTO tickets (event_id, seat_no)
+        INSERT INTO tickets (eventId, seatNo)
         SELECT
           $1,
           chr(65 + r) || s
         FROM generate_series(0, $2 - 1) AS r
         CROSS JOIN generate_series(1, $3) AS s
-        ON CONFLICT (event_id, seat_no) DO NOTHING
+        ON CONFLICT (eventId, seatNo) DO NOTHING
       `,
-      [eventId, totalSeats, seatsPerRow],
+      [eventId, totalRows, seatsPerRow],
     );
 
     const insertedCount = result.rowCount;
@@ -89,9 +91,8 @@ export class TicketService {
       `
           UPDATE tickets
           SET status = 'RESERVED',
-              order_id = $1,
-              reserved_until = NOW() + INTERVAL '10 minutes'
-          WHERE id IN ($2)
+              orderId = $1
+          WHERE id = ANY($2)
           AND status = $3
         `,
       [orderId, ticketIds, TICKET_STATUS.AVAILABLE],
@@ -110,9 +111,8 @@ export class TicketService {
       `
         UPDATE tickets
         SET status = $1,
-            reserved_until = NULL,
-            order_id = NULL
-        WHERE order_id = $2
+            orderId = NULL
+        WHERE orderId = $2
           AND status = $3
       `,
       [TICKET_STATUS.AVAILABLE, orderId, TICKET_STATUS.RESERVED],
@@ -131,7 +131,7 @@ export class TicketService {
       `
         UPDATE tickets
         SET status = $1
-        WHERE order_id = $2
+        WHERE orderId = $2
         AND status = $3
       `,
       [TICKET_STATUS.SOLD, orderId, TICKET_STATUS.RESERVED],

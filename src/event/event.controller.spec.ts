@@ -55,8 +55,8 @@ describe('EventController', () => {
         {
           id: eventId,
           name: eventDto.name,
-          venue_id: venueId,
-          date_time: eventDto.dateTime,
+          venueId: venueId,
+          dateTime: eventDto.dateTime,
           status: EVENT_STATUS.ACTIVE,
         },
       ];

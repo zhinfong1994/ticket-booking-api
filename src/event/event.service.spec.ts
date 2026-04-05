@@ -63,8 +63,8 @@ describe('EventService', () => {
         {
           id: '51c3143b-dafa-4227-82f0-6e4a68806c7b',
           name: eventDto.name,
-          venue_id: venueId,
-          date_time: eventDto.dateTime,
+          venueId: venueId,
+          dateTime: eventDto.dateTime,
           status: EVENT_STATUS.ACTIVE,
         },
       ];

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { PoolClient } from 'pg';
 import { pool } from '../db/db';
@@ -30,7 +30,7 @@ export class OrderService {
 
   async findOrderByUser(userId: string): Promise<GetOrdersResponseDto[]> {
     const result = await pool.query<Orders>(
-      `SELECT id, status, tickets FROM orders WHERE user_id = $1 ORDER BY created_at DESC`,
+      `SELECT id, status, tickets FROM orders WHERE userId = $1 ORDER BY createdAt DESC`,
       [userId],
     );
 
@@ -40,12 +40,13 @@ export class OrderService {
   async createOrder(body: CreateOrderDto): Promise<CreateOrderResponseDto> {
     const client: PoolClient = await pool.connect();
     const { userId, ticketIds } = body;
+
     const orderId = uuidv4();
     try {
       await client.query('BEGIN');
 
       await client.query(
-        `INSERT INTO orders (id, user_id, tickets, expires_at) VALUES ($1, $2, $3, NOW() + INTERVAL '15 minutes')`,
+        `INSERT INTO orders (id, userId, tickets, expiresAt) VALUES ($1, $2, $3, NOW() + INTERVAL '15 minutes')`,
         [orderId, userId, ticketIds],
       );
 
@@ -71,10 +72,14 @@ export class OrderService {
     try {
       await client.query('BEGIN');
 
-      await pool.query(`UPDATE orders SET status = $1 WHERE id = $2`, [
-        ORDER_STATUS.CONFIRMED,
-        orderId,
-      ]);
+      const result = await pool.query(
+        `UPDATE orders SET status = $1 WHERE id = $2 AND status = $3`,
+        [ORDER_STATUS.CONFIRMED, orderId, ORDER_STATUS.PENDING],
+      );
+
+      if (result.rowCount === 0) {
+        throw new BadRequestException('Order is not in PENDING state');
+      }
 
       await this.ticketService.confirmTickets({ orderId });
 
@@ -95,10 +100,15 @@ export class OrderService {
     try {
       await client.query('BEGIN');
 
-      await pool.query(`UPDATE orders SET status = $1 WHERE id = $2`, [
-        ORDER_STATUS.CANCELLED,
-        orderId,
-      ]);
+      const result = await pool.query(
+        `UPDATE orders SET status = $1 WHERE id = $2 AND status = $3`,
+        [ORDER_STATUS.CANCELLED, orderId, ORDER_STATUS.PENDING],
+      );
+
+      if (result.rowCount === 0) {
+        throw new BadRequestException('Order is not in PENDING state');
+      }
+
       await this.ticketService.releaseTickets({ orderId }, client);
       await client.query('COMMIT');
       return { isSuccess: true };

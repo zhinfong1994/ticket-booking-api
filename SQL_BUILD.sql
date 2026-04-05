@@ -1,13 +1,9 @@
-// create table in postgresSQL //
-
-** NEED CREATE DB IN LOCAL 1ST CALLED ticket_db_main
-
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   status TEXT DEFAULT 'ACTIVE',
-  created_at TIMESTAMP DEFAULT NOW()
+  createdAt TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE venues (
@@ -18,24 +14,27 @@ CREATE TABLE venues (
 CREATE TABLE events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT,
-  venue_id UUID,
-  date_time TIMESTAMP,
+  venueId UUID,
+  dateTime TIMESTAMP,
   status TEXT DEFAULT 'ACTIVE',
-  UNIQUE (venue_id, date_time)
+  UNIQUE (venueId, dateTime)
 );
 
 CREATE TABLE tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID,
-  status TEXT DEFAULT 'AVAILABLE'
-  seat_no TEXT NOT NULL
-  UNIQUE(event_id, seat_no)
+  eventId UUID NOT NULL,
+  status TEXT DEFAULT 'AVAILABLE',
+  seatNo TEXT NOT NULL,
+  orderId UUID,
+  createdAt TIMESTAMP DEFAULT NOW(),
+  UNIQUE(eventId, seatNo)
 );
 
 CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID,
+  userId UUID NOT NULL,
   status TEXT DEFAULT 'PENDING',
-  expires_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW()
+  tickets UUID[] NOT NULL,
+  expiresAt TIMESTAMP,
+  createdAt TIMESTAMP DEFAULT NOW()
 );

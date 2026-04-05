@@ -15,12 +15,12 @@ export class GetEventResponseDto {
   @ApiProperty({ example: 'venue-uuid' })
   @IsUUID()
   @IsNotEmpty()
-  venue_id: string;
+  venueId: string;
 
   @ApiProperty({ example: '2023-10-10T10:00:00.000Z' })
   @IsDateString()
   @IsNotEmpty()
-  date_time: Date;
+  dateTime: Date;
 
   @ApiProperty({ example: 'ACTIVE' })
   @IsString()

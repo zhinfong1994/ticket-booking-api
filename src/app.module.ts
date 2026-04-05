@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { VenueModule } from './venue/venue.module';
 import { EventModule } from './event/event.module';
 import { TicketModule } from './ticket/ticket.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -14,6 +15,9 @@ import { TicketModule } from './ticket/ticket.module';
     VenueModule,
     EventModule,
     TicketModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
   ],
   controllers: [],
   providers: [],

@@ -9,6 +9,10 @@ describe('JwtAuthGuard', () => {
     guard = new JwtAuthGuard();
   });
 
+  beforeAll(() => {
+    process.env.JWT_SECRET = 'test_secret';
+  });
+
   const mockContext = (authHeader?: string): ExecutionContext =>
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     ({
@@ -22,7 +26,7 @@ describe('JwtAuthGuard', () => {
     }) as any;
 
   it('should allow valid token', () => {
-    const token = jwt.sign({ userId: '123' }, 'secret');
+    const token = jwt.sign({ userId: '123' }, process.env.JWT_SECRET);
 
     const context = mockContext(`Bearer ${token}`);
 

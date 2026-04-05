@@ -8,6 +8,7 @@ import {
   UseGuards,
   Param,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { OrderService } from './order.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import {
@@ -15,6 +16,7 @@ import {
   CreateOrderResponseDto,
 } from './dtos/create-order.dto';
 
+@ApiBearerAuth()
 @Controller('orders')
 export class OrderController {
   constructor(private readonly service: OrderService) {}
@@ -23,7 +25,7 @@ export class OrderController {
   @Post()
   create(
     @Body() body: CreateOrderBodyDto,
-    @Req() req: { user?: { userId?: string } },
+    @Req() req: any,
   ): Promise<CreateOrderResponseDto> {
     return this.service.createOrder({
       userId: req?.user?.userId,

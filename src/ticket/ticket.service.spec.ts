@@ -44,9 +44,9 @@ describe('TicketService', () => {
       const mockTickets = [
         {
           id: 'c162c23f-2486-4ec1-a00b-65e376ce1371',
-          event_id: eventId,
+          eventId: eventId,
           status: TICKET_STATUS.AVAILABLE,
-          seat_no: 'A1',
+          seatNo: 'A1',
         },
       ];
 
@@ -55,7 +55,7 @@ describe('TicketService', () => {
       const result = await service.findByEvent(eventId);
 
       expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT id, event_id, status, seat_no'),
+        expect.stringContaining('SELECT id, eventId, status, seatNo'),
         [eventId],
       );
 

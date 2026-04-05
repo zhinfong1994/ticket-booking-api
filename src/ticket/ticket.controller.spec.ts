@@ -41,9 +41,9 @@ describe('TicketController', () => {
       const mockTickets = [
         {
           id: tickets[0],
-          event_id: eventId,
+          eventId: eventId,
           status: TICKET_STATUS.AVAILABLE,
-          seat_no: 'A1',
+          seatNo: 'A1',
         },
       ];
 

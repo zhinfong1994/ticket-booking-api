@@ -9,7 +9,7 @@ export class GetTicketByEventResponseDto {
 
   @ApiProperty({ example: 'event-uuid' })
   @IsUUID()
-  event_id: string;
+  eventId: string;
 
   @ApiProperty({ example: 'AVAILABLE' })
   @IsString()
@@ -17,5 +17,5 @@ export class GetTicketByEventResponseDto {
 
   @ApiProperty({ example: '1' })
   @IsString()
-  seat_no: string;
+  seatNo: string;
 }

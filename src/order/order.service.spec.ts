@@ -133,7 +133,7 @@ describe('OrderService', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE orders SET status'),
-        [ORDER_STATUS.CONFIRMED, orderUUID],
+        [ORDER_STATUS.CONFIRMED, orderUUID, ORDER_STATUS.PENDING],
       );
 
       expect(ticketService.confirmTickets).toHaveBeenCalledWith({
@@ -142,6 +142,18 @@ describe('OrderService', () => {
 
       expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
       expect(result).toEqual({ isSuccess: true });
+    });
+
+    it('should throw if order is not in PENDING state', async () => {
+      mockClient.query.mockResolvedValue({});
+      mockQuery.mockResolvedValue({ rowCount: 0 });
+
+      await expect(
+        service.confirmOrder({ orderId: orderUUID }),
+      ).rejects.toThrow('Order is not in PENDING state');
+
+      expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockClient.release).toHaveBeenCalled();
     });
   });
 
@@ -156,7 +168,7 @@ describe('OrderService', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE orders SET status'),
-        [ORDER_STATUS.CANCELLED, orderUUID],
+        [ORDER_STATUS.CANCELLED, orderUUID, ORDER_STATUS.PENDING],
       );
 
       expect(ticketService.releaseTickets).toHaveBeenCalledWith(
@@ -166,6 +178,18 @@ describe('OrderService', () => {
 
       expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
       expect(result).toEqual({ isSuccess: true });
+    });
+
+    it('should throw if order is not in PENDING state', async () => {
+      mockClient.query.mockResolvedValue({});
+      mockQuery.mockResolvedValue({ rowCount: 0 });
+
+      await expect(service.cancelOrder({ orderId: orderUUID })).rejects.toThrow(
+        'Order is not in PENDING state',
+      );
+
+      expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockClient.release).toHaveBeenCalled();
     });
   });
 });
