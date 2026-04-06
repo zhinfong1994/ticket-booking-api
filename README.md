@@ -86,8 +86,10 @@ npm run test
 ---
 
 ### Production Deployment
- 1. Build Docker image - gcloud builds submit --tag gcr.io/artful-chiller-200303/ticket-booking-api:0.0.1
- 2. Deploy to GCP - gcloud run deploy ticket-booking-api --image gcr.io/artful-chiller-200303/ticket-booking-api:0.0.1
+ 1. Need login gcloud - gcloud auth login
+ 2. Set Project - gcloud config set project YOUR_PROJECT_ID
+ 1. Build Docker image - gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/ticket-booking-api:0.0.1
+ 2. Deploy to GCP - gcloud run deploy ticket-booking-api --image gcr.io/YOUR_PROJECT_ID/ticket-booking-api:0.0.1 --region asia-southeast1
 
 ### Production Swagger UI
 - https://ticket-booking-api-927958102104.asia-southeast1.run.app/api

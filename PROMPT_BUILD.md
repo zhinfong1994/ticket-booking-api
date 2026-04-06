@@ -46,6 +46,10 @@ Output ONLY YAML.
 
 Generate jwt guard logic and jwt guard text spec in typescript nestjs
 
+// Generate Dockerfile and Docker compose yaml
+
+Generate me a basic sample Dockerfile and Docker compose yaml file with db connection
+
 // Generate a README sample document
 
 Generate a README sample document for setup instruction, postgreSQL database setup, env file setup and unit testing instruction
