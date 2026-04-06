@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { pool } from '../db/db';
@@ -21,7 +25,7 @@ export class AuthService {
     ]);
 
     if (result.rows.length > 0) {
-      throw new Error('Email already exists');
+      throw new ConflictException('Email already exists');
     }
 
     await pool.query(

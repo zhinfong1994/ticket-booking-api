@@ -41,10 +41,21 @@ CREATE DATABASE ticket_db_main;
 Create a `.env` file in the root directory:
 
 ```env
-# Database
+# ========================
+# DATABASE (for postgres container)
+# ========================
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=ticket_db_main
+
+# ========================
+# APP CONNECTION
+# ========================
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ticket_db_main
 
+# ========================
 # JWT
+# ========================
 JWT_SECRET=9f7c2a6d8b3e4f1a5c7d9e2b6a8f4c1d7e9b2a6c3f8d1e4b5a7c9d2e6f1b3a8
 ```
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { pool } from '../db/db';
 import {
   CreateEventDto,
@@ -28,7 +28,7 @@ export class EventService {
     );
 
     if (result.rowCount === 0) {
-      throw new Error('Duplicate event (same venue & time)');
+      throw new ConflictException('Duplicate event (same venue & time)');
     }
 
     return { isSuccess: true };

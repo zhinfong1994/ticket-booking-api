@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { pool } from '../db/db';
 import { GetTicketByEventResponseDto } from './dtos/get-ticket.dto';
 import {
@@ -40,7 +40,7 @@ export class TicketService {
     );
 
     if (numberOfTicketGenerated === totalSeats) {
-      throw new Error('All tickets already generated');
+      throw new ConflictException('All tickets already generated');
     }
 
     const totalRows: number = totalSeats / seatsPerRow;
@@ -84,7 +84,7 @@ export class TicketService {
     );
 
     if (tickets.length !== ticketIds.length) {
-      throw new Error('Some tickets already reserved or sold');
+      throw new ConflictException('Some tickets already reserved or sold');
     }
 
     await client.query(
