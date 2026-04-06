@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { pool } from '../db/db';
 import {
@@ -17,6 +17,7 @@ import {
 import { GetOrdersResponseDto } from './dtos/get-order.dto';
 import { ORDER_STATUS } from './enums/order.enum';
 import { TicketService } from '../ticket/ticket.service';
+import { Cron } from '@nestjs/schedule';
 
 interface Orders {
   id: string;
@@ -41,7 +42,7 @@ export class OrderService {
     const client: PoolClient = await pool.connect();
     const { userId, ticketIds } = body;
 
-    const orderId = uuidv4();
+    const orderId = randomUUID();
     try {
       await client.query('BEGIN');
 
@@ -114,6 +115,42 @@ export class OrderService {
       return { isSuccess: true };
     } catch (err) {
       await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  @Cron('* * * * *') // every minute
+  async releaseExpiredOrders() {
+    console.log('Running cron job to release expired orders...');
+    const client: PoolClient = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(
+        `
+          UPDATE orders SET status = $1
+          WHERE status = $2
+            AND expiresAt < NOW()
+          RETURNING id
+        `,
+        [ORDER_STATUS.CANCELLED, ORDER_STATUS.PENDING],
+      );
+
+      const expiredOrderIds = (result.rows || []).map(
+        (row) => row.id as string,
+      );
+
+      for (const orderId of expiredOrderIds) {
+        await this.ticketService.releaseTickets({ orderId }, client);
+      }
+
+      await client.query('COMMIT');
+      return true;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Error releasing expired orders:', err);
       throw err;
     } finally {
       client.release();

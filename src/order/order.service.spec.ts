@@ -3,7 +3,7 @@ import { OrderService } from './order.service';
 import { TicketService } from '../ticket/ticket.service';
 import { pool } from '../db/db';
 import { ORDER_STATUS } from './enums/order.enum';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 jest.mock('../db/db', () => ({
   pool: {
@@ -12,8 +12,8 @@ jest.mock('../db/db', () => ({
   },
 }));
 
-jest.mock('uuid', () => ({
-  v4: jest.fn(),
+jest.mock('crypto', () => ({
+  randomUUID: jest.fn(),
 }));
 
 describe('OrderService', () => {
@@ -56,7 +56,7 @@ describe('OrderService', () => {
     jest.clearAllMocks();
 
     mockConnect.mockResolvedValue(mockClient);
-    (uuidv4 as jest.Mock).mockReturnValue(
+    (randomUUID as jest.Mock).mockReturnValue(
       '85dfd960-1d85-456b-98f3-982b09f9283c',
     );
   });
@@ -190,6 +190,30 @@ describe('OrderService', () => {
 
       expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
       expect(mockClient.release).toHaveBeenCalled();
+    });
+  });
+
+  describe('releaseExpiredOrders', () => {
+    it('should cancel expired orders and release tickets', async () => {
+      mockClient.query
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({
+          rows: [{ id: orderUUID }],
+        }) // update returning cancelled orders
+        .mockResolvedValueOnce({});
+
+      await service.releaseExpiredOrders();
+
+      expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE orders SET status'),
+        [ORDER_STATUS.CANCELLED, ORDER_STATUS.PENDING],
+      );
+      expect(ticketService.releaseTickets).toHaveBeenCalledWith(
+        { orderId: orderUUID },
+        mockClient,
+      );
+      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
     });
   });
 });
