@@ -9,15 +9,15 @@ import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     AuthModule,
     OrderModule,
     ScheduleModule.forRoot(),
     VenueModule,
     EventModule,
     TicketModule,
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
   ],
   controllers: [],
   providers: [],

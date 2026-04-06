@@ -42,13 +42,6 @@ Create a `.env` file in the root directory:
 
 ```env
 # Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=ticket_db_main
-
-# OR use full connection string
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ticket_db_main
 
 # JWT
@@ -79,34 +72,20 @@ npm run start:dev
 npm run test
 ```
 
-### Watch mode
-
-```bash
-npm run test:watch
-```
-
-### Coverage report
-
-```bash
-npm run test:cov
-```
-
 ---
 
-## 🧑‍💻 Tech Stack
+### Production Deployment
+ 1. Build Docker image - gcloud builds submit --tag gcr.io/artful-chiller-200303/ticket-booking-api:0.0.1
+ 2. Deploy to GCP - gcloud run deploy ticket-booking-api --image gcr.io/artful-chiller-200303/ticket-booking-api:0.0.1
 
-* NestJS
-* PostgreSQL
-* TypeScript
-* JWT Authentication
-* Jest (Unit Testing)
+### Production Swagger UI
+- https://ticket-booking-api-927958102104.asia-southeast1.run.app/api
 
----
 
-## 📌 Future Improvements
+## System Future Improvements
 
 * Add Redis for caching & locking
-* Add queue (BullMQ) for order expiration
+* Add queue or scheduler for order expiration
 * Add Swagger / OpenAPI integration
 * Add rate limiting & monitoring
 
