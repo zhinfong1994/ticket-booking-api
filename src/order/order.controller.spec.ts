@@ -53,28 +53,50 @@ describe('OrderController', () => {
       const req = {
         user: { userId },
       };
+      const idempotencyKey = 'create-order-001';
 
-      service.createOrder.mockResolvedValue({ id: orderUUID });
+      service.createOrder.mockResolvedValue({
+        id: orderUUID,
+        expiresAt: '2026-05-07T18:30:00.000Z',
+      });
 
-      const result = await controller.create(body, req);
+      const result = await controller.create(body, req, idempotencyKey);
 
       expect(service.createOrder).toHaveBeenCalledWith({
         userId,
+        idempotencyKey,
         ticketIds: body.ticketIds,
       });
 
-      expect(result).toEqual({ id: orderUUID });
+      expect(result).toEqual({
+        id: orderUUID,
+        expiresAt: '2026-05-07T18:30:00.000Z',
+      });
     });
   });
 
   describe('confirm', () => {
     it('should call service.confirmOrder', async () => {
+      const req = {
+        user: { userId },
+      };
+      const body = { paymentToken: 'tok_visa_4242', amount: 100.0 };
+      const idempotencyKey = 'confirm-order-001';
+
       service.confirmOrder.mockResolvedValue({ isSuccess: true });
 
-      const result = await controller.confirm(orderUUID);
+      const result = await controller.confirm(
+        orderUUID,
+        body,
+        req,
+        idempotencyKey,
+      );
 
       expect(service.confirmOrder).toHaveBeenCalledWith({
         orderId: orderUUID,
+        userId,
+        idempotencyKey,
+        paymentToken: body.paymentToken,
       });
 
       expect(result).toEqual({ isSuccess: true });
@@ -83,12 +105,17 @@ describe('OrderController', () => {
 
   describe('cancel', () => {
     it('should call service.cancelOrder', async () => {
+      const req = {
+        user: { userId },
+      };
+
       service.cancelOrder.mockResolvedValue({ isSuccess: true });
 
-      const result = await controller.cancel(orderUUID);
+      const result = await controller.cancel(orderUUID, req);
 
       expect(service.cancelOrder).toHaveBeenCalledWith({
         orderId: orderUUID,
+        userId,
       });
 
       expect(result).toEqual({ isSuccess: true });
@@ -102,7 +129,12 @@ describe('OrderController', () => {
       };
 
       const mockOrders = [
-        { id: orderUUID, status: ORDER_STATUS.PENDING, tickets: tickets },
+        {
+          id: orderUUID,
+          status: ORDER_STATUS.PENDING,
+          tickets: tickets,
+          expiresAt: '2026-05-07T18:30:00.000Z',
+        },
       ];
 
       service.findOrderByUser.mockResolvedValue(mockOrders);

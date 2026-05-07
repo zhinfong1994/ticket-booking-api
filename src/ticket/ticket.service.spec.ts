@@ -83,10 +83,40 @@ describe('TicketService', () => {
 
       const result = await service.create(dto);
 
+      expect(mockQuery).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('INSERT INTO tickets'),
+        [eventId, ['A1', 'A2', 'B1', 'B2']],
+      );
+
       expect(result).toEqual({
         isSuccess: true,
         totalTicketGenerated: 4,
       });
+    });
+
+    it('should generate the exact number of seats for uneven row layouts', async () => {
+      const dto = {
+        eventId,
+        totalSeats: 5,
+        seatsPerRow: 2,
+      };
+
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ count: 0 }],
+      });
+
+      mockQuery.mockResolvedValueOnce({
+        rowCount: 5,
+      });
+
+      await service.create(dto);
+
+      expect(mockQuery).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('INSERT INTO tickets'),
+        [eventId, ['A1', 'A2', 'B1', 'B2', 'C1']],
+      );
     });
 
     it('should throw if all tickets already generated', async () => {
@@ -175,21 +205,19 @@ describe('TicketService', () => {
         [TICKET_STATUS.AVAILABLE, payload.orderId, TICKET_STATUS.RESERVED],
       );
 
-      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
-
       expect(result).toEqual({ isSuccess: true });
     });
   });
 
   describe('confirmTickets', () => {
-    it('should confirm tickets', async () => {
+    it('should confirm tickets with a transaction client', async () => {
       const payload = { orderId: orderUUID };
 
-      mockQuery.mockResolvedValue({});
+      mockClientQuery.mockResolvedValue({});
 
-      const result = await service.confirmTickets(payload);
+      const result = await service.confirmTickets(payload, mockClient as PoolClient);
 
-      expect(mockQuery).toHaveBeenCalledWith(
+      expect(mockClientQuery).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE tickets'),
         [TICKET_STATUS.SOLD, payload.orderId, TICKET_STATUS.RESERVED],
       );

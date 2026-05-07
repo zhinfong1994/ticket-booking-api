@@ -6,6 +6,10 @@ export class CancelOrderDto {
   @IsUUID()
   @IsNotEmpty()
   orderId: string;
+  @ApiProperty({ example: 'user-uuid' })
+  @IsUUID()
+  @IsNotEmpty()
+  userId: string;
 }
 
 export class CancelOrderResponseDto {

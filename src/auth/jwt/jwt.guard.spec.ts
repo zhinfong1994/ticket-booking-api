@@ -1,6 +1,7 @@
 import { JwtAuthGuard } from './jwt.guard';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
+import { USER_ROLE } from '../enums/auth.dto';
 
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
@@ -26,7 +27,10 @@ describe('JwtAuthGuard', () => {
     }) as any;
 
   it('should allow valid token', () => {
-    const token = jwt.sign({ userId: '123' }, process.env.JWT_SECRET);
+    const token = jwt.sign(
+      { userId: '123', role: USER_ROLE.CUSTOMER },
+      process.env.JWT_SECRET,
+    );
 
     const context = mockContext(`Bearer ${token}`);
 
@@ -41,6 +45,12 @@ describe('JwtAuthGuard', () => {
 
   it('should throw if invalid token', () => {
     const context = mockContext('Bearer invalid');
+
+    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+  });
+
+  it('should throw if authorization header is malformed', () => {
+    const context = mockContext('Token abc123');
 
     expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
   });

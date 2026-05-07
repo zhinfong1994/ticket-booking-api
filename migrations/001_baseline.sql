@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
@@ -9,12 +9,12 @@ CREATE TABLE users (
   createdAt TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE venues (
+CREATE TABLE IF NOT EXISTS venues (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL
 );
 
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   venueId UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
@@ -23,7 +23,7 @@ CREATE TABLE events (
   UNIQUE (venueId, dateTime)
 );
 
-CREATE TABLE tickets (
+CREATE TABLE IF NOT EXISTS tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   eventId UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   status TEXT DEFAULT 'AVAILABLE',
@@ -33,7 +33,7 @@ CREATE TABLE tickets (
   UNIQUE(eventId, seatNo)
 );
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status TEXT DEFAULT 'PENDING',
@@ -43,7 +43,7 @@ CREATE TABLE orders (
   createdAt TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   orderId UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -53,16 +53,24 @@ CREATE TABLE payments (
   paidAt TIMESTAMP DEFAULT NOW()
 );
 
-ALTER TABLE tickets
-ADD CONSTRAINT fk_tickets_order
-FOREIGN KEY (orderId) REFERENCES orders(id) ON DELETE SET NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_name = 'fk_tickets_order' AND table_name = 'tickets'
+  ) THEN
+    ALTER TABLE tickets
+    ADD CONSTRAINT fk_tickets_order
+    FOREIGN KEY (orderId) REFERENCES orders(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
-CREATE INDEX idx_events_status_datetime ON events(status, dateTime);
-CREATE INDEX idx_events_venue_datetime ON events(venueId, dateTime);
-CREATE INDEX idx_tickets_event_status ON tickets(eventId, status);
-CREATE INDEX idx_tickets_order_status ON tickets(orderId, status);
-CREATE INDEX idx_orders_user_createdat ON orders(userId, createdAt DESC);
-CREATE INDEX idx_orders_status_expiresat ON orders(status, expiresAt);
-CREATE UNIQUE INDEX idx_orders_user_idempotency ON orders(userId, idempotencyKey);
-CREATE UNIQUE INDEX idx_payments_order ON payments(orderId);
-CREATE UNIQUE INDEX idx_payments_user_idempotency ON payments(userId, idempotencyKey);
+CREATE INDEX IF NOT EXISTS idx_events_status_datetime ON events(status, dateTime);
+CREATE INDEX IF NOT EXISTS idx_events_venue_datetime ON events(venueId, dateTime);
+CREATE INDEX IF NOT EXISTS idx_tickets_event_status ON tickets(eventId, status);
+CREATE INDEX IF NOT EXISTS idx_tickets_order_status ON tickets(orderId, status);
+CREATE INDEX IF NOT EXISTS idx_orders_user_createdat ON orders(userId, createdAt DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_status_expiresat ON orders(status, expiresAt);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_user_idempotency ON orders(userId, idempotencyKey);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_order ON payments(orderId);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_user_idempotency ON payments(userId, idempotencyKey);

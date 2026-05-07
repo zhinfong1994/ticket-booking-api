@@ -19,6 +19,27 @@ import { TICKET_STATUS } from './enums/ticket.enum';
 
 @Injectable()
 export class TicketService {
+  private buildRowLabel(rowIndex: number): string {
+    let currentIndex = rowIndex;
+    let label = '';
+
+    do {
+      label = String.fromCharCode(65 + (currentIndex % 26)) + label;
+      currentIndex = Math.floor(currentIndex / 26) - 1;
+    } while (currentIndex >= 0);
+
+    return label;
+  }
+
+  private buildSeatNumbers(totalSeats: number, seatsPerRow: number): string[] {
+    return Array.from({ length: totalSeats }, (_, seatIndex) => {
+      const rowIndex = Math.floor(seatIndex / seatsPerRow);
+      const seatNumber = (seatIndex % seatsPerRow) + 1;
+
+      return `${this.buildRowLabel(rowIndex)}${seatNumber}`;
+    });
+  }
+
   async findByEvent(eventId: string): Promise<GetTicketByEventResponseDto[]> {
     const result: QueryResult<GetTicketByEventResponseDto> = await pool.query(
       `SELECT id, eventId, status, seatNo FROM tickets WHERE eventId = $1 ORDER BY createdAt ASC`,
@@ -43,19 +64,16 @@ export class TicketService {
       throw new ConflictException('All tickets already generated');
     }
 
-    const totalRows: number = totalSeats / seatsPerRow;
+    const seatNumbers = this.buildSeatNumbers(totalSeats, seatsPerRow);
 
     const result = await pool.query(
       `
         INSERT INTO tickets (eventId, seatNo)
-        SELECT
-          $1,
-          chr(65 + r) || s
-        FROM generate_series(0, $2 - 1) AS r
-        CROSS JOIN generate_series(1, $3) AS s
+        SELECT $1, seat_no
+        FROM unnest($2::text[]) AS seat_no
         ON CONFLICT (eventId, seatNo) DO NOTHING
       `,
-      [eventId, totalRows, seatsPerRow],
+      [eventId, seatNumbers],
     );
 
     const insertedCount = result.rowCount;
@@ -118,16 +136,19 @@ export class TicketService {
       [TICKET_STATUS.AVAILABLE, orderId, TICKET_STATUS.RESERVED],
     );
 
-    await client.query('COMMIT');
-
     return {
       isSuccess: true,
     };
   }
 
-  async confirmTickets(body: ConfirmTicketsDto): Promise<boolean> {
+  async confirmTickets(
+    body: ConfirmTicketsDto,
+    client?: PoolClient,
+  ): Promise<boolean> {
     const { orderId } = body;
-    await pool.query(
+    const queryable = client ?? pool;
+
+    await queryable.query(
       `
         UPDATE tickets
         SET status = $1

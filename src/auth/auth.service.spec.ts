@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
+import { AuditService } from '../audit/audit.service';
 import { pool } from '../db/db';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import { UnauthorizedException } from '@nestjs/common';
-import { USER_STATUS } from './enums/auth.dto';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { USER_ROLE, USER_STATUS } from './enums/auth.dto';
 
 jest.mock('../db/db', () => ({
   pool: {
@@ -34,6 +35,7 @@ describe('AuthService', () => {
     email: 'test@example.com',
     password: 'hashed-password',
     status: USER_STATUS.ACTIVE,
+    role: USER_ROLE.CUSTOMER,
   };
 
   beforeAll(() => {
@@ -42,7 +44,10 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService],
+      providers: [
+        AuthService,
+        { provide: AuditService, useValue: { log: jest.fn() } },
+      ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
@@ -75,10 +80,33 @@ describe('AuthService', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO users'),
-        [email, 'hashed-password'],
+        [email, 'hashed-password', USER_ROLE.CUSTOMER],
       );
 
       expect(result).toBe(true);
+    });
+
+    it('should register admin when the bootstrap secret matches', async () => {
+      process.env.ADMIN_REGISTRATION_SECRET = 'bootstrap-secret';
+      mockHash.mockResolvedValue('hashed-password');
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      mockQuery.mockResolvedValueOnce({ rows: [mockUser] });
+
+      await service.register('admin@example.com', 'password123', 'bootstrap-secret');
+
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO users'),
+        ['admin@example.com', 'hashed-password', USER_ROLE.ADMIN],
+      );
+    });
+
+    it('should reject invalid admin bootstrap secrets', async () => {
+      process.env.ADMIN_REGISTRATION_SECRET = 'bootstrap-secret';
+      mockHash.mockResolvedValue('hashed-password');
+
+      await expect(
+        service.register('admin@example.com', 'password123', 'wrong-secret'),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw if email already exists', async () => {
@@ -117,7 +145,7 @@ describe('AuthService', () => {
       expect(mockCompare).toHaveBeenCalledWith(password, mockUser.password);
 
       expect(mockJwtSign).toHaveBeenCalledWith(
-        { userId: mockUser.id, email: mockUser.email },
+        { userId: mockUser.id, email: mockUser.email, role: mockUser.role },
         process.env.JWT_SECRET,
         { expiresIn: '15m' },
       );

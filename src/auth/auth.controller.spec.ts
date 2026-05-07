@@ -9,6 +9,7 @@ describe('AuthController', () => {
   const mockBody = {
     email: 'test@example.com',
     password: 'password123',
+    adminSecret: 'bootstrap-secret',
   };
 
   const mockResponse = {
@@ -44,6 +45,7 @@ describe('AuthController', () => {
       expect(service.register).toHaveBeenCalledWith(
         mockBody.email,
         mockBody.password,
+        mockBody.adminSecret,
       );
 
       expect(result).toBe(true);

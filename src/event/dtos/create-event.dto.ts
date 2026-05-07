@@ -5,6 +5,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateEventDto {
@@ -19,6 +20,7 @@ export class CreateEventDto {
   venueId: string;
 
   @ApiProperty({ example: '2023-10-10T10:00:00.000Z' })
+  @Type(() => Date)
   @IsDate()
   @IsNotEmpty()
   dateTime: Date;
